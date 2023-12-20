@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title class="title">Cache County Sync</title>
+  <script>
+  let latestMessage = '';
+
+  function showNotification(message) {
+    if (Notification.permission === 'granted') {
+      new Notification('New Message!', {
+        body: message,
+        icon: 'path/to/icon.png'
+      });
+    } else if (Notification.permission !== 'denied') {
+      Notification.requestPermission().then(function(permission) {
+        if (permission === 'granted') {
+          new Notification('New Message!', {
+            body: message,
+            icon: 'path/to/icon.png'
+          });
+        }
+      });
+    }
+  }
+
+  function sendMessage() {
+    latestMessage = 'This is the latest message';
+    
+    // Check if the page is currently hidden
+    if (document.visibilityState === 'hidden') {
+      // If the page is hidden, show the notification
+      showNotification(latestMessage);
+    }
+  }
+
+  // Listen for visibility change events
+  document.addEventListener('visibilitychange', function() {
+    // If the page becomes visible, you might want to do something (optional)
+    if (document.visibilityState === 'visible') {
+      // Optionally handle visibility change when the page becomes visible
+    }
+  });
+</script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="/socket.io/socket.io.js" defer></script>
+  <style>
+    body {
+      background-color: #385e66;
+    }
+
+    #msgList {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    #msgList img {
+      max-width: 500px;
+      max-height: 500px;
+    }
+
+    #nameInputContainer {
+      display: block;
+    }
+
+    #nameInputContainer.hidden {
+      display: none;
+    }
+
+    .chat-message {
+      margin: 5px 0;
+    }
+
+    #activeUsers {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>CCSync</h1>
+  <text-area>Welcome To The CCSD Student Made Group Chat. This Webpage Is Still In Development.</text-area>
+  <div id="greetingMessage">
+    <!-- Greeting message will be displayed here -->
+  </div>
+  <div id="greet">Hiii</div>
+  <div id="msgList">
+    <label>Messages</label>
+    <!-- Display area for the received image -->
+    <div id="imageContainer"></div>
+  </div>
+  <div id="nameInputContainer">
+    <label>Name</label>
+    <input class="u-full-width" id="nameInp">
+  </div>
+
+  <script>
+    // Assuming you have a JavaScript code to get the name
+    document.getElementById('nameInp').addEventListener('input', function() {
+      var name = this.value;
+      document.getElementById('greetingMessage').innerText = "Hello, " + name + "!";
+    });
+  </script>
+    <label>Message</label>
+    <input class="u-full-width" id="msgInp">
+    <input type="file" id="fileInput">
+    <button class="button-primary" id="sendButton">Send</button>
+  </div>
+  <div id="activeUsers">Active Users: <span id="userCount">0</span></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      let socket = io();
+      let greeting = "Thanks For Using CCSync!";
+      let greetingElement = document.getElementById('greet');
+      greetingElement.textContent = greeting;
+      document.body.appendChild(greetingElement);
+
+      let nameInputContainer = document.getElementById("nameInputContainer");
+      let nameInput = document.getElementById("nameInp");
+      let msgInput = document.getElementById("msgInp");
+      let fileInput = document.getElementById("fileInput");
+      let sendButton = document.getElementById("sendButton");
+      let msgList = document.getElementById("msgList");
+      let imageContainer = document.getElementById("imageContainer");
+      let userColor;
+
+      fileInput.addEventListener('change', handleFileChange);
+      sendButton.addEventListener('click', sendMessageOrFile);
+      msgInput.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+          sendMessageOrFile();
+        }
+      });
+
+      function handleFileChange() {
+        // Enable the "Send" button if a file is chosen
+        sendButton.disabled = !fileInput.files[0] && !msgInput.value.trim();
+      }
+
+      function sendMessageOrFile() {
+        if (msgInput.value.trim()) {
+          // If there's content in the textbox, send the message
+          sendMessage();
+        }
+
+        if (fileInput.files[0]) {
+          // If a file is chosen, send the file
+          sendFile();
+        }
+      }
+
+      function sendMessage() {
+        const message = msgInput.value.trim();
+
+        if (message) {
+          // Set user color if not already set
+          userColor = userColor || getRandomColor(); // Use getRandomColor to ensure a different color for each user
+          console.log(userColor); // Log the color to the console
+
+          // Apply user color
+          nameInput.classList.add('user-color');
+          msgInput.classList.add('user-color');
+
+          // Emit the message to the server
+          socket.emit('mychat', {
+            name: nameInput.value,
+            msg: message,
+            color: userColor
+          });
+          msgInput.value = "";
+
+          // Hide the name input container after the first message is sent
+          nameInputContainer.classList.add('hidden');
+        }
+      }
+
+      function sendFile() {
+        // Get the selected file
+        const file = fileInput.files[0];
+
+        if (file) {
+          // Read the file as a data URL
+          const reader = new FileReader();
+
+          reader.onload = (e) => {
+            // Emit the image data to the server
+            socket.emit('image', {
+              name: nameInput.value,
+              imageData: e.target.result
+            });
+
+            // Clear file selection
+            fileInput.value = "";
+          };
+
+          reader.readAsDataURL(file);
+        }
+      }
+
+      socket.on('allchat', showChat);
+
+      function showChat(data) {
+        if (data && data.name && data.msg) {
+          // Create a new chat message element
+          let chatElement = document.createElement('p');
+          chatElement.textContent = data.name + ": " + data.msg;
+          chatElement.classList.add('chat-message');
+
+          // Set the user's color
+          chatElement.style.color = data.color || "#000"; // Default to black if color is not provided
+
+          // Append the message to the chat box
+          msgList.appendChild(chatElement);
+          msgList.scrollTop = msgList.scrollHeight;
+        }
+      }
+
+      socket.on('image', showImage);
+
+      function showImage(data) {
+        if (data && data.name && data.imageData) {
+          // Display the received image
+          let imgElement = document.createElement('img');
+          imgElement.src = data.imageData;
+          imgElement.alt = data.name + "'s image";
+
+          // Set max dimensions for the image
+          imgElement.style.maxWidth = '250px';
+          imgElement.style.maxHeight = '250px';
+
+          // Append the image to the container inside the messages box
+          msgList.appendChild(imgElement);
+          msgList.scrollTop = msgList.scrollHeight;
+        }
+      }
+
+      // Function to generate a random color
+      function getRandomColor() {
+        const validColors = [
+          "#95c32f ", "#029991", "#91598b", "#d17f85", "#d15618", "#071496", "#240d02", "#a636ad",
+          "#c6c140", "#c6c140", "#76e069", "#6dfe1e", "#555020", "#eb9d5d", "#d1818e", "#20a089",
+          "#7ec828", "#ecf21c", "#ce51f6", "#78f66e", "#0d8af1", "#b84d7b", "#83fc4f", "#eafc23",
+          "#f208f3", "#6c596b", "#bf8a4c", "#dc2a5d", "#632db8", "#b1e50f", "#03fe38", "#dd24cc",
+          "#653f9e", "#94dbd1"
+        ];
+
+        let color = validColors[Math.floor(Math.random() * validColors.length)];
+
+        // Ensure the generated color is not close to yellow or the background color
+        while (isColorCloseToYellow(color) || isColorCloseToBackground(color)) {
+          color = validColors[Math.floor(Math.random() * validColors.length)];
+        }
+
+        return color;
+      }
+
+      // Function to check if a color is close to yellow
+      function isColorCloseToYellow(color) {
+        const yellowColor = "#FFC300";
+        const colorDistance = getColorDistance(color, yellowColor);
+        return colorDistance < 50; // Adjust this threshold as needed
+      }
+
+      // Function to check if a color is close to the background color
+      function isColorCloseToBackground(color) {
+        const bgColor = "#adcef0";
+        const colorDistance = getColorDistance(color, bgColor);
+        return colorDistance < 50; // Adjust this threshold as needed
+      }
+
+      // Function to calculate the color distance between two colors
+      function getColorDistance(color1, color2) {
+        const rgb1 = hexToRgb(color1);
+        const rgb2 = hexToRgb(color2);
+
+        const rDiff = rgb1.r - rgb2.r;
+        const gDiff = rgb1.g - rgb2.g;
+        const bDiff = rgb1.b - rgb2.b;
+
+        return Math.sqrt(rDiff * rDiff + gDiff * gDiff + bDiff * bDiff);
+      }
+
+      // Function to convert hex color to RGB
+      function hexToRgb(hex) {
+        // Remove the hash at the beginning if it exists
+        hex = hex.replace(/^#/, '');
+
+        // Parse the hex value into individual color components
+        const bigint = parseInt(hex, 16);
+        const r = (bigint >> 16) & 255;
+        const g = (bigint >> 8) & 255;
+        const b = bigint & 255;
+
+        return { r, g, b };
+      }
+
+      // Update the active users count
+      socket.on('activeUsers', function (count) {
+        document.getElementById('userCount').textContent = count;
+      });
+    });
+  </script>
+
+</body>
+
+<footer>
+<a href="https://docs.google.com/document/d/1VDRJrVQMuExU2qJiBgAYblkbqMPn15K7Q-34W9AY0ys/edit?usp=sharing">CCSync Terms And Conditions, Privacy Policy, ACCEPTABLE USE POLICY</a></footer>
+
+</html>

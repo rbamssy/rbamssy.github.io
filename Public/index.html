@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Log In</title>
+    <link rel="stylesheet" href="public/style.css">
+</head>
+<body style="text-align: center;">
+    <h1 style="text-align: center;">Log In</h1>
+    <form id="loginForm" style="text-align: center;">
+        <label>Email</label>
+        <input type="email" id="emailInput" placeholder=""><br>
+        <label>Password</label>
+        <input type="password" id="passwordInput" placeholder=""><br>
+        <input type="button" value="Submit" onclick="submitForm()">
+    </form>
+
+    <p style="text-align: center;">Don't have an account? Sign up <a href="signup.html">here</a></p>
+
+    <script>
+        function submitForm() {
+            // Get the values from the form
+            var email = document.getElementById('emailInput').value;
+            var password = document.getElementById('passwordInput').value;
+
+            // Check if the provided credentials are correct
+            if (email === 'ccsync.help@gmail.com' && password === 'mossisedible') {
+                // Redirect to main_chat.html
+                window.location.href = 'main_chat.html';
+            } else {
+                // Show an alert or message for incorrect credentials
+                alert('Incorrect email or password. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>
