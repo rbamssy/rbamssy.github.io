@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title class="title">Cache County Sync</title>
+  <script>
+    let latestMessage = '';
+
+    function showNotification(message) {
+      // ... (Notification handling logic)
+    }
+
+    function sendMessage() {
+      latestMessage = 'This is the latest message';
+
+      if (document.visibilityState === 'hidden') {
+        showNotification(latestMessage);
+      }
+    }
+
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') {
+        // Handle visibility change when the page becomes visible (optional)
+      }
+    });
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/skeleton/2.0.4/skeleton.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script src="/socket.io/socket.io.js" defer></script>
+  <style>
+    /* ... (CSS styles) */
+  </style>
+</head>
+
+<body>
+  <h1>CCSync</h1>
+  <text-area>Welcome To The CCSD Student Made Group Chat. This Webpage Is Still In Development.</text-area>
+  <div id="greetingMessage"></div>
+  <div id="greet">Hiii</div>
+  <div id="msgList">
+    <label>Messages</label>
+    <div id="imageContainer"></div>
+  </div>
+  <div id="nameInputContainer">
+    <label>Name</label>
+    <input class="u-full-width" id="nameInp">
+  </div>
+
+  <script>
+    document.getElementById('nameInp').addEventListener('input', function () {
+      var name = this.value;
+      document.getElementById('greetingMessage').innerText = "Hello, " + name + "!";
+    });
+  </script>
+
+  <label>Message</label>
+  <input class="u-full-width" id="msgInp">
+  <input type="file" id="fileInput">
+  <button class="button-primary" id="sendButton">Send</button>
+  </div>
+  <div id="activeUsers">Active Users: <span id="userCount">0</span></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      // ... (JavaScript logic)
+    });
+  </script>
+
+</body>
+
+<footer>
+  <a href="https://docs.google.com/document/d/1VDRJrVQMuExU2qJiBgAYblkbqMPn15K7Q-34W9AY0ys/edit?usp=sharing">
+    CCSync Terms And Conditions, Privacy Policy, ACCEPTABLE USE POLICY
+  </a>
+</footer>
+
+</html>
